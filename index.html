@@ -150,6 +150,43 @@ footer a{color:var(--roxo)}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .chart-box{position:relative;height:260px}
 .hidden{display:none!important}
+.kmove{font-size:11px;border:1px solid var(--linha);border-radius:6px;padding:3px 6px;background:#fff;max-width:135px;color:var(--roxo);font-weight:600}
+/* ===== RESPONSIVO / MOBILE ===== */
+@media(max-width:600px){
+ .topbar{font-size:10px;gap:5px;padding:5px 12px;line-height:1.35}
+ .topbar .sep{display:none}
+ header{padding:9px 12px;gap:8px}
+ .marca{height:36px}
+ header .spacer{display:none}
+ .sec-title{border-left:none;padding-left:0;order:9;flex-basis:100%}
+ .sec-title h1{font-size:13px}.sec-title small{font-size:10px}
+ .dcbadge{width:30px;height:30px;font-size:14px}
+ .role-box{padding:4px 8px;gap:5px}.role-box .lbl{display:none}.role-box select{font-size:12px;padding:4px 6px}
+ #userEmail{display:none}
+ .cta-head{padding:8px 12px;font-size:12.5px}
+ nav button{padding:11px 13px;font-size:12.5px}
+ main{padding:12px 12px 64px}
+ h2.sec{font-size:15px}
+ .kpis{grid-template-columns:1fr 1fr;gap:8px}
+ .kpi{padding:11px 12px}.kpi .n{font-size:21px}.kpi .t{font-size:10px}
+ .grid2{gap:12px}.card{padding:13px}
+ .toolbar{gap:8px}
+ .toolbar input[type=text]{min-width:0;width:100%;flex:1 1 100%}
+ .toolbar select{flex:1 1 46%;min-width:0}
+ table{font-size:12px}th,td{padding:7px 6px}
+ .modal>header{padding:12px 15px}.modal .body{padding:4px 14px 14px}
+ .form-grid,.form-grid.c3{grid-template-columns:1fr}
+ .fs .fs-body{padding:12px}
+ .hero{padding:16px;gap:12px}.hero-tx h2{font-size:17px}.hero-btn{font-size:15px;padding:13px;width:100%}
+ .fab{right:14px;bottom:14px}
+ .boletim-preview{padding:16px 13px}
+ .bol-hd{flex-wrap:wrap;gap:8px}.bol-hd .n{margin-left:0;text-align:left}
+ .bol-kpis{grid-template-columns:1fr 1fr}
+ .kmove{max-width:100%;flex:1}
+ .subtable{font-size:11px}.subtable input,.subtable select{font-size:11px;padding:4px}
+ .alloc-grid,.gauges{grid-template-columns:1fr}
+}
+@media(max-width:380px){.kpis{grid-template-columns:1fr}.bol-kpis{grid-template-columns:1fr}}
 /* alertas */
 .alerts{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
 .alert{display:flex;gap:11px;align-items:flex-start;padding:11px 14px;border-radius:10px;border-left:5px solid;background:#fff;box-shadow:0 1px 4px rgba(80,40,120,.08)}
@@ -1216,7 +1253,8 @@ function renderKanban(){
         <div class="kt">#${o.id} · ${g?esc(o.bairro||'—'):esc(o.requerente||'—')}</div>
         <div class="km">${esc(tipo)} · ${esc(o.bairro||'—')} · 👥 ${atingidos(o)||'?'}</div>
         <div class="kf"><span class="age ${late?'late':''}">${st==='Resolvido'?'✓ '+fmtD(o.dataEncerramento||o.data):ageDays(o)+'d'}</span>
-        <button class="kbtn" onclick="printOS(${o.id})">🖨️ OS</button></div></div>`;}).join('');
+        <button class="kbtn" onclick="printOS(${o.id})">🖨️ OS</button></div>
+        ${g?'':`<select class="kmove" onchange="moveOS(this.value,${o.id})" title="Mover etapa">${KCOLS.map(([s,l])=>`<option value="${s}" ${s===st?'selected':''}>${l}</option>`).join('')}</select>`}</div>`;}).join('');
     return `<div class="kcol" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="dropOS(event,'${st}')">
       <h4>${lb}<span class="cnt">${items.length}</span></h4>${cards||'<div class="mini" style="padding:6px">—</div>'}</div>`;
   }).join('');
@@ -1224,6 +1262,7 @@ function renderKanban(){
 let _dragId=null;
 function dragOS(e,id){_dragId=id;e.dataTransfer.effectAllowed='move';}
 function dropOS(e,st){e.preventDefault();document.querySelectorAll('.kcol').forEach(c=>c.classList.remove('dragover'));if(_dragId==null)return;const o=DB.ocorrencias.find(x=>x.id==_dragId);if(o){o.status=st;if(st==='Resolvido'&&!o.dataEncerramento)o.dataEncerramento=new Date().toISOString().slice(0,10);save();renderKanban();renderOcc();renderPainel();toast('OS #'+o.id+' → '+st);}_dragId=null;}
+function moveOS(st,id){const o=DB.ocorrencias.find(x=>x.id==id);if(!o||o.status===st)return;o.status=st;if(st==='Resolvido'&&!o.dataEncerramento)o.dataEncerramento=new Date().toISOString().slice(0,10);save();renderKanban();renderOcc();renderPainel();toast('OS #'+id+' → '+st);}
 
 /* ===== OS IMPRIMÍVEL ===== */
 function printOS(id){const o=DB.ocorrencias.find(x=>x.id==id);if(!o)return;
@@ -1511,6 +1550,7 @@ async function delOcc(id){if(!confirm('Excluir a ficha nº '+id+'?'))return;try{
 
 async function dropOS(e,st){e.preventDefault();document.querySelectorAll('.kcol').forEach(c=>c.classList.remove('dragover'));if(_dragId==null)return;const o=DB.ocorrencias.find(x=>x.id==_dragId);const idd=_dragId;_dragId=null;if(!o)return;const patch={status:st};if(st==='Resolvido'&&!o.dataEncerramento)patch.data_encerramento=new Date().toISOString().slice(0,10);
   try{const {error}=await SB.from('ocorrencias').update(patch).eq('id',idd);if(error)throw error;o.status=st;if(patch.data_encerramento)o.dataEncerramento=patch.data_encerramento;renderKanban();renderOcc();renderPainel();toast('OS #'+idd+' → '+st);}catch(ex){err(ex);}}
+async function moveOS(st,id){const o=DB.ocorrencias.find(x=>x.id==id);if(!o||o.status===st)return;const patch={status:st};if(st==='Resolvido'&&!o.dataEncerramento)patch.data_encerramento=new Date().toISOString().slice(0,10);try{const {error}=await SB.from('ocorrencias').update(patch).eq('id',id);if(error)throw error;o.status=st;if(patch.data_encerramento)o.dataEncerramento=patch.data_encerramento;renderKanban();renderOcc();renderPainel();toast('OS #'+id+' → '+st);}catch(ex){err(ex);}}
 
 async function saveMat(e){e.preventDefault();const g=k=>$('m_'+k).value.trim();const rec={data:g('data')||null,protocolo:g('protocolo')||null,tipo:g('tipo'),qtd:num(g('qtd')),equipe:g('equipe')||null,recebidoPor:g('recebidoPor')||null,cpf:g('cpf')||null,obs:g('obs')||null};const i=$('m_idx').value;const row={ocorrencia_id:ni(rec.protocolo),data:nz(rec.data),tipo:rec.tipo,qtd:rec.qtd,equipe:nz(rec.equipe),recebido_por:nz(rec.recebidoPor),cpf:nz(rec.cpf),obs:nz(rec.obs)};
   try{if(i!==''){const _id=DB.materiais[+i]._id;const {error}=await SB.from('materiais').update(row).eq('id',_id);if(error)throw error;rec._id=_id;DB.materiais[+i]=rec;}
